@@ -44,12 +44,12 @@ From a real end-to-end run, captured live in SigNoz:
 - `frontend-service` and `order-service` independently converged on the **same 16.35% error rate** in the SigNoz dashboard — before the agent even got involved — while `diagnosis-agent` itself ran at 0% errors, a strong signal it was reasoning, not just serving fast requests
 
 <div align="center">
-<img src="docs/trace-waterfall.png" alt="SigNoz flame graph and waterfall view of a full agent.investigation trace, 10.62s total, 14 spans, 0 errors — showing agent.step.1, agent.step.2, and agent.step.3 each wrapping a gemini.generate_content call and a tool call" width="850">
+<img src="trace-waterfall.png" alt="SigNoz flame graph and waterfall view of a full agent.investigation trace, 10.62s total, 14 spans, 0 errors — showing agent.step.1, agent.step.2, and agent.step.3 each wrapping a gemini.generate_content call and a tool call" width="850">
 
 <sub><b>The agent's own investigation, captured as a SigNoz trace.</b> 14 spans, 0 errors, 10.62s end to end. <code>agent.step.3</code> — the final synthesis where the model commits to <code>agent.decision: "final_answer"</code> — takes 4.33s alone, 40.78% of the whole investigation. That's the kind of per-step cost breakdown a plain chat transcript never gives you.</sub>
 </div>
 
-*(Add the SigNoz services dashboard and load-test summary screenshots the same way — drop them in `docs/` as `dashboard.png` and `load-test.png` and reference them with the same `<img>` pattern above.)*
+*(Add the SigNoz services dashboard and load-test summary screenshots the same way — upload `dashboard.png` and `load-test.png` to the repo root, same as `trace-waterfall.png`, and reference them with the same `<img>` pattern above.)*
 
 ---
 
