@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+*.pyc
+alerts.log
+write_agent.py
