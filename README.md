@@ -193,10 +193,6 @@ Most of the build time, honestly, went into infrastructure rather than agent log
 
 Issues, ideas, and PRs are welcome — this started as a solo hackathon build and there's a lot of room to grow it. Open an issue before a large PR so we can align on direction.
 
-## 📄 License
-
-MIT — see [`LICENSE`](LICENSE) for details.
-
 ---
 
 <div align="center">
