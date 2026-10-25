@@ -14,7 +14,7 @@ Instead of simply showing you another dashboard, it helps answer the question: *
 
 **Built for the Agents of SigNoz Hackathon · AI & Agent Observability**
 
-[Project write-up](https://dev.to/polikeybhuvan/i-built-an-ai-sre-agent-that-doesnt-just-detect-incidents-it-investigates-them-2l01) · [Report an issue](https://github.com/polikeybhuvan/signoz-ai-sre-agent/issues)
+[Project write-up](https://dev.to/polikeybhuvan/i-built-an-ai-sre-agent-that-doesnt-just-detect-incidents-it-investigates-them-2l01)
 
 ---
 
