@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 alerts.log
 write_agent.py
+.env
+.env.*
+!.env.example
