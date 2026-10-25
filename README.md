@@ -1,204 +1,438 @@
-<div align="center">
+ <div align="center">
 
 # 🩺 AI SRE Agent
 
-### It doesn't just detect incidents. It investigates them.
+### From incident detection to evidence-based diagnosis.
 
-*An autonomous agent that reasons through live SigNoz telemetry — traces, logs, metrics — the way an on-call engineer would, and hands you a root cause instead of a wall of dashboards.*
+An AI-powered Site Reliability Engineering agent that investigates microservice failures using live observability data from SigNoz. It analyzes logs and distributed traces, dynamically chooses what to investigate next, and produces a human-readable diagnosis with actionable next steps.
 
-[![Built for](https://img.shields.io/badge/Built%20for-Agents%20of%20SigNoz%20Hackathon-7B61FF)](https://signoz.io)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-microservices-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-instrumented-black?logo=opentelemetry)](https://opentelemetry.io/)
-[![Gemini](https://img.shields.io/badge/Gemini-function--calling-4285F4?logo=googlegemini&logoColor=white)](https://aistudio.google.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Microservices-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![OpenTelemetry](https://img.shields.io/badge/Observability-OpenTelemetry-7B61FF?logo=opentelemetry)](https://opentelemetry.io/)
+[![SigNoz](https://img.shields.io/badge/Telemetry-SigNoz-7B61FF)](https://signoz.io/)
+[![Gemini](https://img.shields.io/badge/LLM-Gemini-4285F4)](https://ai.google.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#license)
 
-📝 [Read the full write-up](https://dev.to/polikeybhuvan/i-built-an-ai-sre-agent-that-doesnt-just-detect-incidents-it-investigates-them-2l01) ·
+**Built for the Agents of SigNoz Hackathon · AI & Agent Observability**
+
+[Project write-up](https://dev.to/polikeybhuvan/i-built-an-ai-sre-agent-that-doesnt-just-detect-incidents-it-investigates-them-2l01) · [Report an issue](https://github.com/polikeybhuvan/signoz-ai-sre-agent/issues)
 
 </div>
 
 ---
 
-## 🧭 The 30-second pitch
+## Overview
 
-Every observability platform can tell you a service is slow or throwing errors. None of them tell you **why** — that step still lives in an engineer's head: open trace, check logs, form hypothesis, repeat.
+Modern observability platforms help engineers discover errors, latency spikes, and service degradation. However, diagnosing the underlying problem often requires an engineer to manually inspect traces, correlate logs, form hypotheses, and decide what evidence to gather next.
 
-**AI SRE Agent automates that first pass.** Given only three read-only tools (slow traces, error logs, error traces) and zero hardcoded logic, it decides for itself what to check first, what that result implies, and what to check next — then produces a plain-English diagnosis with a confidence-appropriate next step. The entire reasoning chain — every LLM call, every tool call, every decision — is instrumented with OpenTelemetry and shows up in SigNoz as its own trace, so the agent is exactly as observable as the system it's debugging.
+**AI SRE Agent automates this initial investigation.**
 
-| | Traditional monitoring | This agent |
-|---|---|---|
-| **Input** | Engineer reads dashboards manually | Agent queries SigNoz autonomously |
-| **Investigation path** | Fixed runbook / hardcoded script | Decided dynamically, step by step |
-| **Output** | Metrics and alerts | Plain-English root cause + next step |
-| **Debuggability** | You debug the app | You debug the app *and* watch the agent think |
+It connects an LLM to live SigNoz telemetry through three read-only investigation tools. Rather than executing a single fixed diagnostic script, the agent can select a tool, inspect its results, and decide whether additional evidence is needed before producing a diagnosis.
 
----
+The agent's own execution is instrumented with OpenTelemetry, allowing its investigation steps, LLM calls, tool calls, latency, and token usage to be inspected in SigNoz as well.
 
-## 📊 Proof it works
+The goal is not to replace an SRE engineer. It is to reduce repetitive initial investigation and help engineers get from an alert to a useful starting hypothesis faster.
 
-From a real end-to-end run, captured live in SigNoz:
+## Key features
 
-- **195** load-test requests → **158** succeeded, **37** failed (**81.03%** success rate) — realistic, noisy, production-shaped signal, not a scripted demo
-- **3 reasoning steps, 2 tool calls, 1 diagnosis** — investigation completed in **10.6 seconds**
-- The final synthesis step alone accounted for **40.78%** of total investigation time — visibility a chat transcript alone would never surface
-- `frontend-service` and `order-service` independently converged on the **same 16.35% error rate** in the SigNoz dashboard — before the agent even got involved — while `diagnosis-agent` itself ran at 0% errors, a strong signal it was reasoning, not just serving fast requests
+- **Agentic investigation:** The LLM selects investigation tools dynamically rather than following a completely fixed query sequence.
+- **Live observability data:** Queries SigNoz for slow traces, error logs, and traces containing errors.
+- **Distributed microservice simulation:** Four FastAPI services introduce realistic delays, failures, and downstream dependencies.
+- **Observable AI execution:** OpenTelemetry spans expose the diagnostic agent's execution path.
+- **Token and latency tracking:** Captures Gemini token usage and measures individual investigation steps and tool executions.
+- **Continuous monitoring prototype:** A monitoring loop checks error traces and triggers an investigation when a configured threshold is reached.
+- **Read-only diagnosis:** The agent gathers evidence and recommends next steps; it does not automatically modify production systems or execute remediation.
 
-<div align="center">
-<img src="trace-waterfall.png" alt="SigNoz flame graph and waterfall view of a full agent.investigation trace, 10.62s total, 14 spans, 0 errors — showing agent.step.1, agent.step.2, and agent.step.3 each wrapping a gemini.generate_content call and a tool call" width="850">
+## Architecture
 
-<sub><b>The agent's own investigation, captured as a SigNoz trace.</b> 14 spans, 0 errors, 10.62s end to end. <code>agent.step.3</code> — the final synthesis where the model commits to <code>agent.decision: "final_answer"</code> — takes 4.33s alone, 40.78% of the whole investigation. That's the kind of per-step cost breakdown a plain chat transcript never gives you.</sub>
-</div>
+```text
+                     Checkout Traffic
+                            |
+                            v
+                +----------------------+
+                |  Frontend Service    |
+                |      Port 8001       |
+                +----------+-----------+
+                           |
+                           v
+                +----------------------+
+                |   Order Service      |
+                |      Port 8002       |
+                +-----+-----------+----+
+                      |           |
+                      v           v
+           +----------------+  +----------------+
+           | Inventory      |  | Simulated AI   |
+           | Service :8003  |  | Service :8004  |
+           +----------------+  +----------------+
 
-*(Add the SigNoz services dashboard and load-test summary screenshots the same way — upload `dashboard.png` and `load-test.png` to the repo root, same as `trace-waterfall.png`, and reference them with the same `<img>` pattern above.)*
-
----
-
-## 🏗️ Architecture
-
+                    OpenTelemetry
+                           |
+                           v
+                +----------------------+
+                |       SigNoz         |
+                | Logs and Traces      |
+                +----------+-----------+
+                           |
+                           v
+                +----------------------+
+                |   AI SRE Agent       |
+                | Gemini + 3 Tools     |
+                +----------+-----------+
+                           |
+                           v
+                 Diagnosis and Next Steps
 ```
-frontend-service (8001) → order-service (8002) → inventory-service (8003)
-                                ↓
-                         agent-service (8004)   [simulated LLM/AI call]
-```
 
-Four small FastAPI services, deliberately built to fail like real production systems fail:
+### Components
 
-| Service | Role | Injected chaos |
-|---|---|---|
-| **frontend-service** | Entry point (`/checkout`) | — |
-| **order-service** | Calls inventory + a simulated AI agent step | Random delay, 500/502 errors, simulated deadlocks |
-| **inventory-service** | Simulates a slow DB call | Occasional connection-pool exhaustion (503) |
-| **agent-service** | Simulates an LLM call with fake token counts | Occasional malformed/"hallucinated" responses that `order-service` must catch and fall back on |
+| Component | Responsibility |
+|---|---|
+| `frontend_service.py` | Handles incoming checkout requests and calls the order service. |
+| `order_service.py` | Coordinates inventory and simulated AI calls; introduces latency and transaction failures. |
+| `inventory_service.py` | Simulates inventory database latency and occasional connection-pool exhaustion. |
+| `agent_service.py` | Simulates an application's AI dependency, including slow responses and malformed outputs. |
+| `agent_diagnose.py` | Runs the Gemini-powered investigation using live SigNoz data. |
+| `diagnose.py` | Provides an earlier, fixed-query diagnostic workflow. |
+| `monitor.py` | Periodically checks error traces and launches the diagnostic agent when its threshold is reached. |
+| `json_logger.py` | Provides structured JSON logging for service events. |
+| `load_test.py` | Generates checkout traffic to exercise the microservices and produce telemetry. |
 
-All four are auto-instrumented with OpenTelemetry and export traces, logs, and metrics to SigNoz over OTLP.
+## How the AI investigation works
 
-### The diagnosis agent
+The diagnostic agent uses Gemini function calling and exposes three read-only tools.
 
-`agent_diagnose.py` drives the investigation using **Gemini's function-calling API** with exactly three tools — no more:
+| Tool | Purpose |
+|---|---|
+| `get_slow_traces()` | Retrieves the slowest root-level traces within a lookback window. |
+| `get_error_logs()` | Retrieves recent error-level logs, optionally scoped to a service. |
+| `get_error_traces()` | Retrieves traces containing error spans. |
 
-```
-get_slow_traces()          # slowest root-level traces, across all services
-get_error_logs(service)    # recent ERROR-level structured logs, optionally scoped
-get_error_traces()         # traces containing at least one error span
-```
+The investigation follows an evidence-gathering loop:
 
-The agent loops for up to 5 steps — **call a tool → inspect the result → decide whether to dig deeper or diagnose** — with no hardcoded branching. Change the failure injected into the services, and the investigation path changes with it.
+1. **Investigate:** Gemini receives the investigation objective and available tools.
+2. **Select:** The model chooses a tool and its arguments.
+3. **Collect:** Python executes the selected tool against the SigNoz query API.
+4. **Evaluate:** The results are returned to Gemini for interpretation.
+5. **Continue or diagnose:** The model can request further evidence or provide its diagnosis.
 
-### A real investigation, step by step
+The loop has a configurable maximum number of steps to prevent unbounded investigations.
 
-1. **Cast a wide net.** `get_slow_traces()` surfaces multiple ~6s requests, all pointing at `frontend-service` on `GET /checkout`. Slow ≠ guilty, so the agent keeps digging.
-2. **Narrow in.** `get_error_logs(frontend-service)` reveals the frontend wasn't failing — it was waiting on `order-service`, which was returning HTTP 502.
-3. **Diagnose.** The agent concludes the root cause likely lives in `order-service` or a downstream dependency, and — instead of overclaiming certainty — recommends the specific next check.
+The agent is instructed to explain what appears to be wrong, identify the most likely root cause when supported by evidence, and recommend a concrete next step. A diagnosis is still a model-generated hypothesis and should be validated by an engineer.
 
-### Observing the observer
+### Example investigation
 
-The agent's own reasoning is wrapped in OpenTelemetry spans and shows up in SigNoz as a `diagnosis-agent` trace:
+Consider a checkout request that takes several seconds to complete.
 
-```
+- **Step 1 — Find the symptom:** Slow traces reveal unusually long checkout requests.
+- **Step 2 — Narrow the investigation:** Error logs show that the frontend is waiting on a failing order-service request.
+- **Step 3 — Recommend the next check:** The agent identifies the order service or one of its downstream dependencies as a likely cause and recommends examining the relevant error traces.
+
+This is an illustrative investigation path. The actual sequence depends on the telemetry returned and the tools selected by the model.
+
+## Observing the observer
+
+A central design goal is making the AI investigation itself observable.
+
+The diagnostic agent uses OpenTelemetry spans to represent the overall investigation, individual steps, Gemini requests, and tool executions.
+
+```text
 agent.investigation
 ├── agent.step.1
-│      ├── Gemini API call
-│      └── get_slow_traces()
+│   └── gemini.generate_content
+├── agent.tool_call.get_slow_traces
 ├── agent.step.2
-│      ├── Gemini API call
-│      └── get_error_logs()
+│   └── gemini.generate_content
+├── agent.tool_call.get_error_logs
 └── agent.step.3
-       └── Final diagnosis
+    └── gemini.generate_content
 ```
 
-Every span records prompt/completion/total tokens, response latency, and tool execution timing. **The same platform that debugs the application also debugs the AI deciding what's wrong with it** — that dual-purpose trace is the core idea of this project.
+The actual span tree depends on the investigation path and the number of tool calls.
 
----
+The implementation records attributes such as:
 
-## 🚀 Getting started
+- LLM provider and requested model
+- Prompt, completion, and total token usage when returned by the API
+- Investigation step and decision
+- Tool name, arguments, and result count
+- Tool execution and LLM request timing
+
+These traces help answer two questions: *What went wrong in the application?* and *How did the diagnostic agent investigate it?*
+
+## Demo results
+
+The repository's documented demonstration run reported the following results from a load test captured in SigNoz.
+
+| Measurement | Reported result |
+|---|---:|
+| Checkout requests | 195 |
+| Successful requests | 158 |
+| Failed requests | 37 |
+| Success rate | 81.03% |
+| Investigation steps | 3 |
+| Tool calls | 2 |
+| Investigation duration | Approximately 10.6 seconds |
+| Investigation trace spans | 14 |
+| Errors in the recorded investigation trace | 0 |
+
+The recorded trace showed that the final synthesis step accounted for approximately 40.78% of the total investigation duration.
+
+These are results from the documented demonstration, not a guarantee of performance. Latency, success rates, and investigation paths depend on the simulated failures, telemetry, network, and LLM response times.
+
+### Investigation trace
+
+![SigNoz trace waterfall for an AI SRE investigation](trace-waterfall.png)
+
+*Recorded SigNoz investigation trace showing the agent's execution and timing breakdown.*
+
+## Technology stack
+
+| Technology | Usage |
+|---|---|
+| Python | Application and agent implementation |
+| FastAPI | Microservice APIs |
+| HTTPX | HTTP communication between simulated services and load generation |
+| Gemini API | LLM reasoning and function calling |
+| SigNoz | Observability query platform and telemetry visualization |
+| OpenTelemetry | Distributed tracing and AI execution instrumentation |
+| Requests | HTTP requests to SigNoz and Gemini |
+| python-dotenv | Local environment configuration |
+
+## Getting started
 
 ### Prerequisites
 
-- Docker
-- Python 3.10+
-- A self-hosted SigNoz instance ([install guide](https://signoz.io/docs/install/self-host/))
-- A Gemini API key from [Google AI Studio](https://aistudio.google.com/)
+Before starting, ensure you have:
 
-### 1. Install dependencies
+- Python 3.10 or later
+- A running SigNoz instance with its query API accessible
+- Access to a Gemini API key through Google AI Studio
+- The project dependencies installed
+- An OTLP endpoint configured for sending telemetry to SigNoz
+
+Docker may be used to run SigNoz, depending on your deployment. The application services are started separately as Python processes in this setup.
+
+### 1. Clone the repository
 
 ```bash
+git clone https://github.com/polikeybhuvan/signoz-ai-sre-agent.git
+cd signoz-ai-sre-agent
+```
+
+### 2. Create a virtual environment
+
+**Windows — Command Prompt**
+
+```bat
 python -m venv venv
-venv\Scripts\activate        # or `source venv/bin/activate` on Mac/Linux
-pip install -r requirements.txt
-pip install opentelemetry-distro opentelemetry-exporter-otlp
+venv\Scripts\activate
+```
+
+**macOS or Linux**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install opentelemetry-distro opentelemetry-exporter-otlp
 opentelemetry-bootstrap -a install
 ```
 
-### 2. Start the microservices
-
-Run each service in its own terminal, pointed at your SigNoz OTLP endpoint:
+If the requirements file does not yet include `requests` and `python-dotenv`, install those packages too:
 
 ```bash
+python -m pip install requests python-dotenv
+```
+
+### 4. Configure environment variables
+
+Create a local `.env` file in the repository root. Use the following template:
+
+```dotenv
+SIGNOZ_URL=http://localhost:8080
+SIGNOZ_API_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+MAX_AGENT_STEPS=5
+LOOKBACK_MINUTES=15
+```
+
+Fill in your credentials locally. Use a SigNoz URL and credentials appropriate for your installation.
+
+The diagnostic scripts read their configuration from environment variables, with `.env` loading supported by `python-dotenv`.
+
+**Security requirements:**
+
+- Never commit `.env` or real API keys to GitHub.
+- Keep `.env.example` free of credentials.
+- Rotate any credential that has been exposed.
+- Keep your `.gitignore` configured to exclude local environment files.
+- Remove exposed secrets from Git history when necessary; deleting them from the latest file alone is not sufficient.
+
+### 5. Start SigNoz and the microservices
+
+Make sure SigNoz is running and that its query endpoint and OTLP endpoint are reachable.
+
+Open a separate terminal for each microservice. In each terminal, activate the virtual environment and set the OpenTelemetry endpoint and service name before starting the process.
+
+**Example — Windows Command Prompt**
+
+Frontend service:
+
+```bat
 set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=frontend-service
 opentelemetry-instrument python frontend_service.py
 ```
 
-Repeat for `order_service.py`, `inventory_service.py`, and `agent_service.py`, swapping in the matching `OTEL_SERVICE_NAME` each time.
+Order service:
 
-### 3. Generate traffic
+```bat
+set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+set OTEL_SERVICE_NAME=order-service
+opentelemetry-instrument python order_service.py
+```
+
+Inventory service:
+
+```bat
+set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+set OTEL_SERVICE_NAME=inventory-service
+opentelemetry-instrument python inventory_service.py
+```
+
+Simulated AI service:
+
+```bat
+set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+set OTEL_SERVICE_NAME=agent-service
+opentelemetry-instrument python agent_service.py
+```
+
+Adjust the OTLP endpoint to match your SigNoz installation. Each command should run in its own terminal and remain running.
+
+### 6. Generate checkout traffic
+
+Open another terminal and run:
 
 ```bash
 python load_test.py
 ```
 
-Continuously fires checkout requests — some succeed, some fail, some run slow — so there's real, noisy telemetry for the agent to work with.
+The traffic generator repeatedly sends checkout requests. The simulated services introduce variable latency and occasional failures so that SigNoz receives telemetry to investigate.
 
-### 4. Run the agent
+Allow some traffic to accumulate before running the diagnosis agent.
 
-Fill in `SIGNOZ_API_KEY` and `GEMINI_API_KEY` in `agent_diagnose.py`, then:
+### 7. Run the AI SRE agent
 
-```bash
+Open another terminal, activate your environment, and execute:
+
+```bat
+set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=diagnosis-agent
 opentelemetry-instrument python agent_diagnose.py
 ```
 
----
+The agent queries SigNoz, asks Gemini to select investigation tools, executes those tools, and prints its final diagnosis.
 
-## 📁 Project structure
+To run the earlier fixed-query version instead:
 
-| File | Purpose |
-|---|---|
-| `frontend_service.py`, `order_service.py`, `inventory_service.py`, `agent_service.py` | The flaky microservices chain |
-| `json_logger.py` | Shared structured JSON logging helper |
-| `load_test.py` | Continuous traffic generator |
-| `agent_diagnose.py` | The tool-calling AI diagnosis agent |
-| `diagnose.py` | Earlier, simpler fixed-query version (kept for reference) |
-| `monitor.py` | Continuous monitoring loop that triggers the agent when error rates spike |
+```bash
+python diagnose.py
+```
 
----
+### 8. Run the monitoring prototype
 
-## 💡 What I learned
+The repository also includes a continuous monitoring loop:
 
-Dashboards answer questions you already know to ask. Investigations begin the moment you don't know what to ask next — and that's exactly where an agent earns its keep: not replacing an SRE, but automating the repetitive first pass of an incident.
+```bat
+set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+set OTEL_SERVICE_NAME=diagnosis-agent
+opentelemetry-instrument python monitor.py
+```
 
-Most of the build time, honestly, went into infrastructure rather than agent logic: WSL and Docker networking, ClickHouse startup issues, migrating to SigNoz's new install, and getting OpenTelemetry wired correctly across four services. That friction is a fairly accurate preview of what building real observability tooling looks like.
+The current monitor configuration checks every 60 seconds, evaluates error traces over a five-minute window, triggers an investigation at a threshold of three returned error-trace rows, and applies a three-minute cooldown after a trigger.
 
-## 🗺️ Roadmap
+These are prototype thresholds, not production alerting guarantees. The monitoring logic should be improved to count distinct traces and handle investigation failures reliably before being used in a production environment.
 
-- [ ] Always-on monitoring loop that auto-triggers investigations when error rates spike
-- [ ] More realistic, varied production failure scenarios
-- [ ] Auto-generated incident reports after every investigation
-- [ ] Swap handwritten API tools for SigNoz's **MCP server**
-- [ ] Multi-agent collaboration — dedicated agents for logs, metrics, and traces that investigate independently, then reconcile findings
+## Project structure
 
----
+```text
+signoz-ai-sre-agent/
+├── frontend_service.py
+├── order_service.py
+├── inventory_service.py
+├── agent_service.py
+├── agent_diagnose.py
+├── diagnose.py
+├── monitor.py
+├── json_logger.py
+├── load_test.py
+├── requirements.txt
+├── .gitignore
+├── .env.example
+├── SECURITY.md
+├── trace-waterfall.png
+└── README.md
+```
 
-## 🤝 Contributing
+The `.env` file is intentionally excluded from the repository and should exist only in your local environment or an appropriately secured deployment environment.
 
-Issues, ideas, and PRs are welcome — this started as a solo hackathon build and there's a lot of room to grow it. Open an issue before a large PR so we can align on direction.
+## Current limitations
+
+This project is a prototype intended for learning, experimentation, and demonstration.
+
+- The current diagnostic tools query logs and traces; they do not yet provide a dedicated metrics-investigation tool.
+- The microservices use randomized failure injection rather than a real production database or external AI dependency.
+- The root-cause analysis is an LLM-generated diagnosis and may be incomplete or incorrect.
+- The monitoring implementation uses a basic threshold and cooldown rather than a fully developed alert-management system.
+- The agent recommends next steps but does not automatically remediate incidents.
+- The project requires reliable access to SigNoz and the Gemini API.
+
+## Roadmap
+
+- [ ] Improve monitoring reliability, error handling, and distinct-trace counting.
+- [ ] Add richer and more reproducible failure scenarios.
+- [ ] Generate structured incident reports with supporting evidence.
+- [ ] Add dedicated metrics analysis and service-level objective context.
+- [ ] Explore integrating the SigNoz MCP server as an alternative to handwritten query tools.
+- [ ] Evaluate multi-agent investigation for logs, traces, and metrics.
+- [ ] Add automated tests and continuous integration.
+- [ ] Package the services into a reproducible deployment using container orchestration.
+- [ ] Evaluate diagnosis quality against known failure scenarios.
+
+## Lessons learned
+
+Building this project highlighted that an effective AI agent needs more than an LLM and a prompt. It needs useful tools, reliable telemetry, well-defined failure scenarios, bounded execution, and visibility into its own behavior.
+
+Working through service networking, SigNoz setup, OpenTelemetry configuration, and telemetry queries also demonstrated how much of real-world SRE engineering involves infrastructure and evidence gathering rather than simply interpreting an error message.
+
+The project's central idea is straightforward: **make the investigation observable, not just the incident.**
+
+## Contributing
+
+Ideas, bug reports, and improvements are welcome.
+
+For substantial changes, open an issue first so the proposed work can be discussed before implementation.
+
+## License
+
+This project is licensed under the MIT License, as indicated by the repository's badge. Ensure that a corresponding `LICENSE` file is present in the repository.
 
 ---
 
 <div align="center">
 
-Built solo, for the **Agents of SigNoz** hackathon (AI & Agent Observability track).
+**Built solo for the Agents of SigNoz Hackathon — AI & Agent Observability track.**
 
-⭐ **If this project is interesting to you, a star helps a lot — thank you!**
+If you find the project useful, consider giving the repository a ⭐.
+
+[GitHub Repository](https://github.com/polikeybhuvan/signoz-ai-sre-agent)
 
 </div>
