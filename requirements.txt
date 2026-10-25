@@ -1,4 +1,10 @@
+
 fastapi
 uvicorn
 httpx
 pydantic
+requests
+python-dotenv
+opentelemetry-api
+opentelemetry-distro
+opentelemetry-exporter-otlp
