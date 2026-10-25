@@ -18,9 +18,24 @@ Instead of simply showing you another dashboard, it helps answer the question: *
 
 ---
 
+## 🏆 Hackathon Recognition
+
+**Selected among the Top 100 projects out of 350+ submissions** at the international **Agents of SigNoz Hackathon by WeMakeDevs**.
+
+- **Recognition:** Top 100 project
+- **Competition:** Agents of SigNoz
+- **Focus:** AI agents, observability, and Site Reliability Engineering
+- **Project listing:** [Official Agents of SigNoz project gallery](https://archive.wemakedevs.org/hackathons/signoz/projects/all)
+- **Hackathon website:** [Agents of SigNoz · WeMakeDevs](https://archive.wemakedevs.org/hackathons/signoz)
+
+This recognition reflects the project submitted to the hackathon. The implementation documented here remains a prototype intended for learning, experimentation, and demonstration.
+
+---
+
 ## 📌 Table of Contents
 
 - [Overview](#-overview)
+- [Hackathon Recognition](#-hackathon-recognition)
 - [Features](#-features)
 - [Architecture](#-architecture)
 - [How the Agent Works](#-how-the-agent-works)
@@ -31,6 +46,7 @@ Instead of simply showing you another dashboard, it helps answer the question: *
 - [Project Structure](#-project-structure)
 - [Limitations](#-limitations)
 - [Roadmap](#-roadmap)
+- [What I Learned](#-what-i-learned)
 - [Contributing](#-contributing)
 
 ## 🔍 Overview
@@ -448,7 +464,9 @@ Working through service networking, SigNoz setup, OpenTelemetry configuration, a
 
 Bug reports, suggestions, and contributions are welcome.
 
-For substantial changes, open an issue first to discuss the proposed work.
+**Found a bug or have an idea? [Report an issue](https://github.com/polikeybhuvan/signoz-ai-sre-agent/issues/new).**
+
+For substantial changes, please open an issue first to discuss the proposed work. When reporting a bug, include reproduction steps and relevant logs, and remove API keys, tokens, and other secrets before sharing.
 
 ---
 
@@ -456,8 +474,6 @@ For substantial changes, open an issue first to discuss the proposed work.
 
 **Built solo for the Agents of SigNoz Hackathon · AI & Agent Observability**
 
-If you find this project interesting, consider starring the repository.
-
-[View on GitHub](https://github.com/polikeybhuvan/signoz-ai-sre-agent)
+[Report an issue](https://github.com/polikeybhuvan/signoz-ai-sre-agent/issues/new) · [Official hackathon project gallery](https://archive.wemakedevs.org/hackathons/signoz/projects/all) · [View on GitHub](https://github.com/polikeybhuvan/signoz-ai-sre-agent)
 
 </p>
