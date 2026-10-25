@@ -20,7 +20,6 @@ Instead of simply showing you another dashboard, it helps investigate the questi
 
 <p align="center">
   <a href="https://dev.to/polikeybhuvan/i-built-an-ai-sre-agent-that-doesnt-just-detect-incidents-it-investigates-them-2l01">Project Write-up</a> ·
-  <a href="https://github.com/polikeybhuvan/signoz-ai-sre-agent/issues">Report an Issue</a>
 </p>
 
 ---
