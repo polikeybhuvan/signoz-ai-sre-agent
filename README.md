@@ -1,23 +1,34 @@
-<div align="center">
-
 # 🩺 AI SRE Agent
 
-### From incident signals to evidence-backed diagnosis.
+<p align="center"><strong>From incident signals to evidence-backed diagnosis.</strong></p>
 
-A Gemini-powered Site Reliability Engineering prototype that investigates simulated microservice failures using **SigNoz logs and traces**—while making the AI investigation observable, too.
+<p align="center">A Gemini-powered Site Reliability Engineering prototype that investigates simulated microservice failures using <strong>SigNoz logs and traces</strong>—while making the AI investigation observable, too.</p>
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Services-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Instrumented-7B61FF?logo=opentelemetry)](https://opentelemetry.io/)
-[![SigNoz](https://img.shields.io/badge/Observability-SigNoz-7B61FF)](https://signoz.io/)
-[![Gemini](https://img.shields.io/badge/AI-Gemini-4285F4)](https://ai.google.dev/)
-[![Hackathon](https://img.shields.io/badge/Agents%20of%20SigNoz-Top%20100%20%7C%20350%2B-7C3AED)](https://archive.wemakedevs.org/hackathons/signoz/projects/all)
+<p align="center">
+  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white"></a>
+  <a href="https://fastapi.tiangolo.com/"><img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Services-009688?logo=fastapi"></a>
+  <a href="https://opentelemetry.io/"><img alt="OpenTelemetry" src="https://img.shields.io/badge/OpenTelemetry-Instrumented-7B61FF?logo=opentelemetry"></a>
+  <a href="https://signoz.io/"><img alt="SigNoz" src="https://img.shields.io/badge/Observability-SigNoz-7B61FF"></a>
+  <a href="https://ai.google.dev/"><img alt="Gemini" src="https://img.shields.io/badge/AI-Gemini-4285F4"></a>
+  <a href="https://archive.wemakedevs.org/hackathons/signoz/projects/all"><img alt="Agents of SigNoz Top 100" src="https://img.shields.io/badge/Agents%20of%20SigNoz-Top%20100%20%7C%20350%2B-7C3AED"></a>
+</p>
 
-[Project write-up](https://dev.to/polikeybhuvan/i-built-an-ai-sre-agent-that-doesnt-just-detect-incidents-it-investigates-them-2l01) · [Hackathon gallery](https://archive.wemakedevs.org/hackathons/signoz/projects/all) · [Report an issue](https://github.com/polikeybhuvan/signoz-ai-sre-agent/issues/new)
-
-</div>
+<p align="center">
+  <a href="https://dev.to/polikeybhuvan/i-built-an-ai-sre-agent-that-doesnt-just-detect-incidents-it-investigates-them-2l01">Project write-up</a> ·
+  <a href="https://archive.wemakedevs.org/hackathons/signoz/projects/all">Hackathon gallery</a> ·
+  <a href="https://github.com/polikeybhuvan/signoz-ai-sre-agent/issues/new">Report an issue</a>
+</p>
 
 ---
+
+<p align="center">
+  <a href="#why-this-project">Overview</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#how-the-ai-investigation-works">Agent workflow</a> ·
+  <a href="#demo-results">Demo results</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#security-and-limitations">Limitations</a>
+</p>
 
 ## Why this project?
 
