@@ -49,7 +49,7 @@ The application under investigation is a small microservices system with intenti
 
 ## Architecture
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
     Traffic[Checkout traffic] --> Frontend[Frontend service :8001]
     Frontend --> Order[Order service :8002]
@@ -64,18 +64,18 @@ flowchart TD
     Agent[Gemini-powered diagnostic agent] -->|Read-only query API| SigNoz
     Agent -. agent spans and model metadata .-> SigNoz
     Agent --> Diagnosis[Diagnosis and suggested next steps]
-\`\`\`
+```
 
 ### The application services
 
 | Service | Endpoint | Responsibility | Simulated behavior |
 |---|---|---|---|
-| \`frontend_service.py\` | \`localhost:8001/checkout\` | Entry point for checkout traffic | Downstream errors and failed requests |
-| \`order_service.py\` | \`localhost:8002/order\` | Coordinates order processing | Random latency and transaction failures |
-| \`inventory_service.py\` | \`localhost:8003/stock\` | Simulates an inventory lookup | Variable query delay and simulated outages |
-| \`agent_service.py\` | \`localhost:8004/assist\` | Simulates an application's AI dependency | Slow responses and malformed response behavior |
+| `frontend_service.py` | `localhost:8001/checkout` | Entry point for checkout traffic | Downstream errors and failed requests |
+| `order_service.py` | `localhost:8002/order` | Coordinates order processing | Random latency and transaction failures |
+| `inventory_service.py` | `localhost:8003/stock` | Simulates an inventory lookup | Variable query delay and simulated outages |
+| `agent_service.py` | `localhost:8004/assist` | Simulates an application's AI dependency | Slow responses and malformed response behavior |
 
-**Important distinction:** \`agent_service.py\` is a simulated dependency in the application being monitored. The real Gemini-powered SRE investigator lives in \`agent_diagnose.py\`.
+**Important distinction:** `agent_service.py` is a simulated dependency in the application being monitored. The real Gemini-powered SRE investigator lives in `agent_diagnose.py`.
 
 ## How the AI investigation works
 
@@ -83,9 +83,9 @@ The Gemini-powered agent exposes three read-only tools:
 
 | Tool | Evidence collected |
 |---|---|
-| \`get_slow_traces()\` | Slow root-level traces within a lookback window |
-| \`get_error_logs()\` | Recent error-level logs, optionally filtered by service |
-| \`get_error_traces()\` | Traces containing error spans |
+| `get_slow_traces()` | Slow root-level traces within a lookback window |
+| `get_error_logs()` | Recent error-level logs, optionally filtered by service |
+| `get_error_traces()` | Traces containing error spans |
 
 The investigation follows a bounded tool-calling loop:
 
@@ -95,7 +95,7 @@ The investigation follows a bounded tool-calling loop:
 4. **Reassess.** Gemini can request more evidence or move to a final response.
 5. **Report.** The agent prints a plain-English diagnosis, a likely cause when supported, and a recommended next step.
 
-The maximum number of agent steps is configurable through \`MAX_AGENT_STEPS\`. This bounds the investigation; it does not guarantee a correct diagnosis.
+The maximum number of agent steps is configurable through `MAX_AGENT_STEPS`. This bounds the investigation; it does not guarantee a correct diagnosis.
 
 ### Example: investigating a slow checkout
 
@@ -110,7 +110,7 @@ The investigator is instrumented too. OpenTelemetry spans and attributes can mak
 Depending on the path taken, a trace may contain spans for:
 
 - The overall investigation and each agent step
-- Gemini \`generate_content\` requests
+- Gemini `generate_content` requests
 - Diagnostic tool calls and returned result counts
 - Agent decisions and total investigation steps
 - Model name and token-usage metadata when returned by Gemini
@@ -171,77 +171,77 @@ This guide runs the four application services as local Python processes. SigNoz 
 
 ### 1. Clone and install
 
-\`\`\`bash
+```bash
 git clone https://github.com/polikeybhuvan/signoz-ai-sre-agent.git
 cd signoz-ai-sre-agent
 
 python -m venv venv
-\`\`\`
+```
 
 **Windows — Command Prompt**
-\`\`\`bat
-venv\\Scripts\\activate
+```bat
+venv\Scripts\activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 opentelemetry-bootstrap -a install
 copy .env.example .env
-\`\`\`
+```
 
 **macOS / Linux**
-\`\`\`bash
+```bash
 source venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 opentelemetry-bootstrap -a install
 cp .env.example .env
-\`\`\`
+```
 
 ### 2. Configure credentials
 
-Edit your local \`.env\` file:
+Edit your local `.env` file:
 
-\`\`\`dotenv
+```dotenv
 SIGNOZ_URL=http://localhost:8080
 SIGNOZ_API_KEY=YOUR_SIGNOZ_API_KEY
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 GEMINI_MODEL=gemini-2.5-flash
 MAX_AGENT_STEPS=5
 LOOKBACK_MINUTES=15
-\`\`\`
+```
 
-Replace the placeholders with valid credentials and adjust the SigNoz endpoint to your setup. Keep the real \`.env\` file local; do not commit credentials.
+Replace the placeholders with valid credentials and adjust the SigNoz endpoint to your setup. Keep the real `.env` file local; do not commit credentials.
 
 ### 3. Start the four services
 
 Open **a separate terminal for each service**. Activate the virtual environment in each terminal. The examples below use Windows Command Prompt and the default local OTLP endpoint; adjust it to match your SigNoz deployment.
 
 **Frontend**
-\`\`\`bat
+```bat
 set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=frontend-service
 opentelemetry-instrument python frontend_service.py
-\`\`\`
+```
 
 **Order**
-\`\`\`bat
+```bat
 set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=order-service
 opentelemetry-instrument python order_service.py
-\`\`\`
+```
 
 **Inventory**
-\`\`\`bat
+```bat
 set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=inventory-service
 opentelemetry-instrument python inventory_service.py
-\`\`\`
+```
 
 **Simulated AI dependency**
-\`\`\`bat
+```bat
 set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=agent-service
 opentelemetry-instrument python agent_service.py
-\`\`\`
+```
 
 Keep all four processes running.
 
@@ -249,31 +249,31 @@ Keep all four processes running.
 
 In another activated terminal:
 
-\`\`\`bash
+```bash
 python load_test.py
-\`\`\`
+```
 
-The load generator sends repeated requests to \`http://localhost:8001/checkout\`, with randomized intervals. It runs continuously until you stop it with \`Ctrl+C\`. Give SigNoz time to receive telemetry before launching an investigation.
+The load generator sends repeated requests to `http://localhost:8001/checkout`, with randomized intervals. It runs continuously until you stop it with `Ctrl+C`. Give SigNoz time to receive telemetry before launching an investigation.
 
 ### 5. Run the AI SRE Agent
 
-\`\`\`bat
+```bat
 set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=diagnosis-agent
 opentelemetry-instrument python agent_diagnose.py
-\`\`\`
+```
 
 The agent queries SigNoz, lets Gemini choose diagnostic tools, and prints its diagnosis.
 
 The earlier fixed-query workflow is also available:
 
-\`\`\`bash
+```bash
 python diagnose.py
-\`\`\`
+```
 
 ## Continuous monitoring prototype
 
-\`monitor.py\` periodically checks error-trace results and invokes the agent when its threshold is reached. Current settings in the script are:
+`monitor.py` periodically checks error-trace results and invokes the agent when its threshold is reached. Current settings in the script are:
 
 | Setting | Value |
 |---|---:|
@@ -284,17 +284,17 @@ python diagnose.py
 
 Run it with OpenTelemetry instrumentation:
 
-\`\`\`bat
+```bat
 set OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 set OTEL_SERVICE_NAME=diagnosis-agent
 opentelemetry-instrument python monitor.py
-\`\`\`
+```
 
 **Monitoring limitation:** the SigNoz query returns a limited set of rows. The script deduplicates trace IDs within those returned results, so traces outside the query result window may not be counted. This is a monitoring prototype, not a production alerting or remediation system.
 
 ## Repository map
 
-\`\`\`text
+```text
 signoz-ai-sre-agent/
 ├── frontend_service.py   # Checkout entry point
 ├── order_service.py      # Order workflow and failure injection
@@ -311,7 +311,7 @@ signoz-ai-sre-agent/
 ├── SECURITY.md           # Security policy
 ├── trace-waterfall.png   # Recorded SigNoz investigation trace
 └── README.md
-\`\`\`
+```
 
 ## Security and limitations
 
@@ -327,7 +327,7 @@ This project is a prototype for learning, experimentation, and demonstration. It
 
 ### Credential hygiene
 
-- Keep API keys in a local \`.env\` file or a suitably secured deployment environment.
+- Keep API keys in a local `.env` file or a suitably secured deployment environment.
 - Never commit real keys or tokens.
 - Rotate credentials immediately if they are exposed; removing a secret from the latest file does not remove it from Git history.
 - Review [SECURITY.md](SECURITY.md) for vulnerability-reporting guidance.
